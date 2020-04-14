@@ -1,4 +1,3 @@
-
 ## Jenkins X Boot Configuration
 
 This repository contains the source code for [Jenkins X Boot configuration](https://jenkins-x.io/docs/getting-started/setup/boot/) so that you can setup, upgrade or configure your Jenkins X installation via GitOps.
@@ -7,25 +6,30 @@ This repository contains the source code for [Jenkins X Boot configuration](http
 
 ### Creating a kubernetes cluster
 
-* either use Terraform to spin up a GKE cluster with a `jx` namespace and any necessary cloud resources (e.g. on GCP we need a Kaniko Service Account and Secret)
-* create an empty GKE cluster by hand e.g. via `jx create cluster gke --skip-installation` or using the [GCP Console](https://console.cloud.google.com/)
+- either use Terraform to spin up a GKE cluster with a `jx` namespace and any necessary cloud resources (e.g. on GCP we need a Kaniko Service Account and Secret)
+- create an empty GKE cluster by hand e.g. via `jx create cluster gke --skip-installation` or using the [GCP Console](https://console.cloud.google.com/)
+- Use init.sh to build locally in kind
 
 ### Run the new Jenkins X Bootstrap Pipeline
 
-Create a fork of this git repository on github. We suggest renaming it to match the pattern `environment-<cluster name>-dev`. To rename your repository go to the repository settings in github. 
+Create a fork of this git repository on github. We suggest renaming it to match the pattern `environment-<cluster name>-dev`. To rename your repository go to the repository settings in github.
 
 Clone your newly forked git repository:
 
 ```
 git clone https://github.com/<org>/environment-<cluster name>-dev && cd environment-<cluster name>-dev
 ```
- 
+
 > It's important that you cd into your newly checked out git repo, otherwise `jx boot` will use the upstream Jenkins X boot
-configuration.
+> configuration.
+
+#### Private Registry
+
+https://jenkins-x.io/docs/reference/components/docker-registry/
 
 Now, in the checkout, run:
 
-``` 
+```
 jx boot
 ```
 
@@ -39,11 +43,9 @@ The pipeline will then setup the ingress controller, then cert manager, then ins
 
 Apart from the secrets populated to Vault / local file system everything else is stored inside this git repository as Apps and helm charts.
 
-
 ### How it works
 
 We have improved the support for value + secret composition via this [issue](https://github.com/jenkins-x/jx/issues/4328).
-
 
 ### Parameters file
 
@@ -53,17 +55,16 @@ We define a [env/parameters.yaml](https://github.com/jenkins-x/jenkins-x-boot-co
 
 If you look at the current [env/parameters.yaml](https://github.com/jenkins-x/jenkins-x-boot-config/blob/master/env/parameters.yaml) file you will see some values inlined and others use URIs of the form `local:my-cluster-folder/nameofSecret/key`. This currently supports 2 schemes:
 
-* `vault:` to load from a path + key from Vault
-* `local:` to load from a key in a YAML file at `~/.jx/localSecrets/$path.yml`
+- `vault:` to load from a path + key from Vault
+- `local:` to load from a key in a YAML file at `~/.jx/localSecrets/$path.yml`
 
 This means we can populate all the Parameters we need on startup then refer to them from `values.yaml` to populate the tree of values to then inject those into Vault.
 
-
-#### Populating the `parameters.yaml` file 
+#### Populating the `parameters.yaml` file
 
 We can then use the new step to populate the `parameters.yaml` file via this command in the `env` folder:
 
-``` 
+```
 jx step create values --name parameters
 ```
 
@@ -77,16 +78,15 @@ So if you wanted to perform your own install from this git repo, just fork it, r
 
 Rather than a huge huge deeply nested values.yaml file we can have a tree of files for each App only include the App specific configuration in each folder. e.g.
 
-``` 
+```
 env/
   values.yaml   # top level configuration
   prow/
     values.yaml # prow specific config
   tekton/
-    vales.yaml  # tekton specific config 
+    vales.yaml  # tekton specific config
 ```
-  
-  
+
 #### values.yaml templates
 
 When using `jx step helm apply` we now allow `values.yaml` files to use go/helm templates just like `templates/foo.yaml` files support inside helm charts so that we can generate value/secret strings which can use templating to compose things from smaller secret values. e.g. creating a maven `settings.xml` file or docker `config.json` which includes many user/passwords for different registries.

@@ -6,3 +6,4 @@ requirements.lock
 .idea
 env/cluster/
 env/parameters.schema.json
+*.token
